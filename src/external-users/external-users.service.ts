@@ -2,10 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { CreateExternalUserDto } from './dto/create-external-user.dto';
 import { UpdateExternalUserDto } from './dto/update-external-user.dto';
 import axios from 'axios';
+import { CacheService } from 'src/cache/cache.service';
 
 @Injectable()
 export class ExternalUsersService {
   private readonly API_URL = 'https://jsonplaceholder.typicode.com/users';
+
+  constructor(private readonly cacheService: CacheService) {}
 
   async create(createExternalUserDto: CreateExternalUserDto) {
     const { data } = await axios.post(this.API_URL, createExternalUserDto);
@@ -13,12 +16,24 @@ export class ExternalUsersService {
   }
 
   async findAll() {
+    const cacheKey = 'backend-developer-test:external-users:all';
+
+    const cacheData = await this.cacheService.get(cacheKey);
+    if (cacheData) return cacheData;
+
     const { data } = await axios.get(this.API_URL);
+    await this.cacheService.set(cacheKey, data, 60);
     return data;
   }
 
   async findOne(id: number) {
+    const cacheKey = `backend-developer-test:external-users:${id}`;
+
+    const cacheData = await this.cacheService.get(cacheKey);
+    if (cacheData) return cacheData;
+
     const { data } = await axios.get(`${this.API_URL}/${id}`);
+    await this.cacheService.set(cacheKey, data, 60);
     return data;
   }
 
